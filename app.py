@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 from datetime import datetime, date
 import pandas as pd
+import plotly.express as px
 
 def create_connection(db_file):
     conn = None
@@ -40,6 +41,18 @@ def run_query(query,conn):
         st.error(f"Erro ao executar a query: {e}")
     finally:
         conn.close()
+
+def fetch_daily_averages(conn, agente):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT date(data) as dia, AVG(nota) as media
+        FROM notas
+        WHERE agente = ?
+        GROUP BY date(data)
+        ORDER BY dia
+    """, (agente,))
+    rows = cursor.fetchall()
+    return rows
 
         
 
@@ -156,6 +169,13 @@ def main():
                 update_and_show_averages()
                 df_notas = pd.DataFrame(notas_usuario, columns=["Ticket", "Data", "Nota"])
                 st.dataframe(df_notas)
+                daily_averages = fetch_daily_averages(conn, st.session_state.usuario[0])
+                if daily_averages:
+                    df_daily_avg = pd.DataFrame(daily_averages, columns=["Dia", "Média"])
+                    fig = px.bar(df_daily_avg, x='Dia', y='Média', title='Média de Notas por Dia')
+                    st.plotly_chart(fig)
+                else:
+                    st.write("Nenhuma média de notas disponível para exibir.")
 
             else:
                 update_and_show_averages()
