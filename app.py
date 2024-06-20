@@ -31,6 +31,16 @@ def fetch_user_notes(conn, agente):
     rows = cursor.fetchall()
     return rows
 
+def run_query(query,conn):
+
+    try:
+        df = pd.read_sql_query(query, conn)
+        return df
+    except Exception as e:
+        st.error(f"Erro ao executar a query: {e}")
+    finally:
+        conn.close()
+
         
 
 def main():
@@ -95,7 +105,18 @@ def main():
                 st.session_state.show_cadastro = False
 
     if st.session_state.logged_in:
-        st.title(f"Bem-vindo, {st.session_state.usuario[1]}!")  # Display the user's name
+        st.title(f"Bem-vindo, {st.session_state.usuario[1]}!")
+        if st.session_state.usuario[1] == 'TESTE':
+            query = st.text_area("**Digite sua consulta SQL aqui:**")
+            if st.button("Executar"):
+                if query.strip():
+                    result = run_query(query,conn)
+                    if result is not None:
+                        st.write("Resultado da consulta:")
+                        st.dataframe(result)
+                else:
+                    st.warning("Por favor, insira uma consulta SQL.")
+
         
         # Função para atualizar e exibir médias
         def update_and_show_averages():
